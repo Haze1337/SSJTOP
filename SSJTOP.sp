@@ -1,8 +1,8 @@
 #include <sdktools>
 #include <sdkhooks>
 
-//#undef REQUIRE_PLUGIN
-//#include <shavit>
+#undef REQUIRE_PLUGIN
+#include <shavit>
 
 public Plugin myinfo = 
 {
@@ -55,6 +55,10 @@ bool gB_IllegalSSJ[MAXPLAYERS+1];
 bool gB_DeleteMode[MAXPLAYERS+1];
 bool gB_InAir[MAXPLAYERS+1];
 
+ConVar gH_SpecialString = null;
+char gS_SpecialString[128];
+bool gB_DisablePlugin[MAXPLAYERS+1];
+
 bool gB_DebugMessages = false;
 
 enum struct ssj_player_stats_t
@@ -85,7 +89,7 @@ enum struct ssj_top_stats_t
 ssj_player_stats_t gA_PlayerStats[MAXPLAYERS+1][6];
 ssj_top_stats_t gA_TopStats[2][RANKSCOUNT];
 
-//stylestrings_t gS_StyleStrings[STYLE_LIMIT];
+stylestrings_t gS_StyleStrings[STYLE_LIMIT];
 
 float gF_Tickrate = 0.01;
 
@@ -93,6 +97,13 @@ public void OnPluginStart()
 {
 	RegConsoleCmd("sm_ssjtop", Command_SSJTOP, "");
 	RegAdminCmd("sm_ssjtopdelete", Command_SSJTOPDelete, ADMFLAG_ROOT, "");
+	
+	gH_SpecialString = CreateConVar("shavit_ssjtop_string", "ssjtop", "Special string for styles where you want to disable ssjtop.");
+	
+	gH_SpecialString.AddChangeHook(ConVar_OnSpecialStringChanged);
+	gH_SpecialString.GetString(gS_SpecialString, sizeof(gS_SpecialString));
+
+	AutoExecConfig();
 	
 	SQL_DBConnect();
 	DB_LoadTop();
@@ -107,7 +118,20 @@ public void OnPluginStart()
 		}
 	}
 	
-	//Shavit_OnStyleConfigLoaded(-1);
+	Shavit_OnStyleConfigLoaded(-1);
+}
+
+public void ConVar_OnSpecialStringChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	convar.GetString(gS_SpecialString, sizeof(gS_SpecialString));
+}
+
+public void Shavit_OnStyleChanged(int client, int oldstyle, int newstyle)
+{
+	char[] sSpecial = new char[128];
+	Shavit_GetStyleStrings(newstyle, sSpecialString, sSpecial, 128);
+
+	gB_DisablePlugin[client] = (StrContains(sSpecial, gS_SpecialString) != -1);
 }
 
 public Action Command_SSJTOPDelete(int client, int args)
@@ -153,7 +177,7 @@ public Action Command_SSJTOPDelete(int client, int args)
 	return Plugin_Handled;
 }
 
-/*public void Shavit_OnStyleConfigLoaded(int styles)
+public void Shavit_OnStyleConfigLoaded(int styles)
 {
 	if(styles == -1)
 	{
@@ -164,7 +188,7 @@ public Action Command_SSJTOPDelete(int client, int args)
 	{
 		Shavit_GetStyleStrings(i, sSpecialString, gS_StyleStrings[i].sSpecialString, sizeof(stylestrings_t::sSpecialString));
 	}
-}*/
+}
 
 public Action Command_SSJTOP(int client, int args)
 {
@@ -218,6 +242,7 @@ public void OnClientPutInServer(int client)
 public void OnClientDisconnect(int client)
 {
 	gB_DeleteMode[client] = false;
+	gB_DisablePlugin[client] = false;
 }
 
 // Credits: Alkatraz
@@ -322,10 +347,10 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		return Plugin_Continue;
 	}
 	
-	//if(StrContains(gS_StyleStrings[Shavit_GetBhopStyle(client)].sSpecialString, "TAS") != -1)
-	//{
-	//	return Plugin_Continue;
-	//}
+	if(gB_DisablePlugin[client])
+	{
+		return Plugin_Continue;
+	}
 	
 	if((GetEntityFlags(client) & FL_ONGROUND) > 0)
 	{
@@ -416,10 +441,10 @@ void SaveStats(int client)
 		return;
 	}
 	
-	//if(StrContains(gS_StyleStrings[Shavit_GetBhopStyle(client)].sSpecialString, "TAS") != -1)
-	//{
-	//	return;
-	//}
+	if(gB_DisablePlugin[client])
+	{
+		return;
+	}
 	
 	float velocity[3];
 	GetEntPropVector(client, Prop_Data, "m_vecAbsVelocity", velocity);
