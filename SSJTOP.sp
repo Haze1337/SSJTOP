@@ -16,8 +16,8 @@ public Plugin myinfo =
 #define BHOP_FRAMES 10
 #define RANKSCOUNT 50
 
-char sText[] = "\x07ffffff";
-char sVariable[] = "\x073498DB";
+char gS_Text[16];
+char gS_Variable[16];
 
 Menu gM_TopMainMenu = null;
 Menu gM_TopMenus[2] = null;
@@ -93,8 +93,27 @@ stylestrings_t gS_StyleStrings[STYLE_LIMIT];
 
 float gF_Tickrate = 0.01;
 
+EngineVersion gEV_Type = Engine_Unknown;
+
 public void OnPluginStart()
 {
+	gEV_Type = GetEngineVersion();
+	
+	if(gEV_Type == Engine_CSGO)
+	{
+		FormatEx(gS_Text, 16, "\x01");
+		FormatEx(gS_Variable, 16, "\x0B");
+	}
+	else if(gEV_Type == Engine_CSS)
+	{
+		FormatEx(gS_Text, 16, "\x07ffffff");
+		FormatEx(gS_Variable, 16, "\x073498DB");
+	}
+	else
+	{
+		SetFailState("This plugin was meant to be used in CS:S and CS:GO *only*.");
+	}
+
 	RegConsoleCmd("sm_ssjtop", Command_SSJTOP, "");
 	RegAdminCmd("sm_ssjtopdelete", Command_SSJTOPDelete, ADMFLAG_ROOT, "");
 	
@@ -620,7 +639,7 @@ void SSJTopUpdate(int client, int duck)
 	
 	if(iPos == 0)
 	{
-		SSJTOP_PrintToChatAll("New TOP SSJ%s by %s%s %s(%s%d%s).", duck ? " (DUCK)" : "", sVariable, gA_TopStats[duck][iPos].sName, sText, sVariable, gA_TopStats[duck][iPos].iTopSpeed, sText);
+		SSJTOP_PrintToChat(0, "New TOP SSJ%s by %s%s %s(%s%d%s).", duck ? " (DUCK)" : "", gS_Variable, gA_TopStats[duck][iPos].sName, gS_Text, gS_Variable, gA_TopStats[duck][iPos].iTopSpeed, gS_Text);
 	}
 }
 
@@ -640,7 +659,7 @@ void CheckLastJump(int client)
 		int heightdiff = RoundToFloor(gA_PlayerStats[client][i].fHeight) - RoundToFloor(gA_PlayerStats[client][0].fHeight);
 		if(heightdiff != 0)
 		{
-			DebugMessage(client, "Invalid Height Value: %s%i", sVariable, heightdiff);
+			DebugMessage(client, "Invalid Height Value: %s%i", gS_Variable, heightdiff);
 			gB_IllegalSSJ[client] = true;
 			return;
 		}
@@ -649,7 +668,7 @@ void CheckLastJump(int client)
 		float airtime = gA_PlayerStats[client][i].fAirTime;
 		if(airtime > 0.8)
 		{
-			DebugMessage(client, "Invalid Airtime: %s%.1f", sVariable, airtime);
+			DebugMessage(client, "Invalid Airtime: %s%.1f", gS_Variable, airtime);
 			gB_IllegalSSJ[client] = true;
 			return;
 		}
@@ -660,7 +679,7 @@ void CheckLastJump(int client)
 	// Checking Strafes Count
 	if(strafes < 5 || strafes > 50)
 	{
-		DebugMessage(client, "Invalid Strafes Count: %s%i", sVariable, strafes);
+		DebugMessage(client, "Invalid Strafes Count: %s%i", gS_Variable, strafes);
 		gB_IllegalSSJ[client] = true;
 		return;
 	}
@@ -743,7 +762,7 @@ void CheckValidSSJ(int client)
 	// Sharp Changes in Speed
 	if(RoundToFloor(GetVectorLength(vVel) - GetVectorLength(vLastVel)) > 30)
 	{
-		DebugMessage(client, "Invalid Speed Changes: %s%d", sVariable, RoundToFloor(GetVectorLength(vVel) - GetVectorLength(vLastVel)));
+		DebugMessage(client, "Invalid Speed Changes: %s%d", gS_Variable, RoundToFloor(GetVectorLength(vVel) - GetVectorLength(vLastVel)));
 		gB_IllegalSSJ[client] = true;
 		return;
 	}
@@ -805,7 +824,7 @@ void IsPlayerOnSlope(int client)
 		TR_GetPlaneNormal(null, nrm);
 		if(nrm[2] < 0.99)
 		{
-			DebugMessage(client, "Slope: %s%.3f", sVariable, nrm[2]);
+			DebugMessage(client, "Slope: %s%.3f", gS_Variable, nrm[2]);
 			gB_IllegalSSJ[client] = true;
 		}
 	}
@@ -1199,7 +1218,7 @@ public int DeleteConfirm_Handler(Menu menu, MenuAction action, int client, int i
 			return 0;
 		}
 		
-		SSJTOP_PrintToChat(client, "Removing %s's %s%d %s%s", gA_TopStats[duck][rank].sName, sVariable, gA_TopStats[duck][rank].iTopSpeed, sText, duck ? "(duck)" : "(noduck)");
+		SSJTOP_PrintToChat(client, "Removing %s's %s%d %s%s", gA_TopStats[duck][rank].sName, gS_Variable, gA_TopStats[duck][rank].iTopSpeed, gS_Text, duck ? "(duck)" : "(noduck)");
 		TopMoveUp(duck, rank);
 		DB_SaveTop();
 		TopCreateMenu(duck);
@@ -1257,22 +1276,32 @@ void DebugMessage(int client, const char[] msg, any ...)
 	{
 		char buffer[300];
 		VFormat(buffer, sizeof(buffer), msg, 3);
-		SSJTOP_PrintToChat(client, "%s%s.", buffer, sText);
+		SSJTOP_PrintToChat(client, "%s%s.", buffer, gS_Text);
 	}
 }
 
-void SSJTOP_PrintToChatAll(const char[] msg, any ...)
+void SSJTOP_PrintToChat(int client = 0, const char[] msg, any ...)
 {
+	if (client != 0)
+	{
+		if (!IsClientInGame(client))
+		{
+			return;
+		}
+	}
+	
+	bool bAll = client == 0;
+	
 	char buffer[300];
-	VFormat(buffer, sizeof(buffer), msg, 2);
-	Format(buffer, sizeof(buffer), "%s[SSJ TOP]%s %s", sVariable, sText, buffer);
-	Handle hMessage = StartMessageAll("SayText2"); 
+	VFormat(buffer, sizeof(buffer), msg, 3);
+	Format(buffer, sizeof(buffer), " %s[SSJ TOP]%s %s", gS_Variable, gS_Text, buffer);
+	Handle hMessage = bAll ? StartMessageAll("SayText2") : StartMessageOne("SayText2", client, USERMSG_RELIABLE|USERMSG_BLOCKHOOKS); 
 	if (hMessage != INVALID_HANDLE) 
 	{
 		if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf) 
 		{
-			PbSetInt(hMessage, "ent_idx", 0);
-			PbSetBool(hMessage, "chat", true);
+			PbSetInt(hMessage, "ent_idx", client);
+			PbSetBool(hMessage, "chat", bAll ? false : true);
 			PbSetString(hMessage, "msg_name", buffer);
 			PbAddString(hMessage, "params", "");
 			PbAddString(hMessage, "params", "");
@@ -1281,43 +1310,11 @@ void SSJTOP_PrintToChatAll(const char[] msg, any ...)
 		}
 		else
 		{
-			BfWriteByte(hMessage, 0);
-			BfWriteByte(hMessage, true);
+			BfWriteByte(hMessage, client);
+			BfWriteByte(hMessage, bAll ? false : true);
 			BfWriteString(hMessage, buffer);
 		}
 		
 		EndMessage();
-	}
-}
-
-void SSJTOP_PrintToChat(int client, const char[] msg, any ...)
-{
-	if (IsClientInGame(client))
-	{
-		char buffer[300];
-		VFormat(buffer, sizeof(buffer), msg, 3);
-		Format(buffer, sizeof(buffer), "%s[SSJ TOP]%s %s", sVariable, sText, buffer);
-		Handle hMessage = StartMessageOne("SayText2", client, USERMSG_RELIABLE|USERMSG_BLOCKHOOKS); 
-		if (hMessage != INVALID_HANDLE) 
-		{
-			if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf) 
-			{
-				PbSetInt(hMessage, "ent_idx", client);
-				PbSetBool(hMessage, "chat", false);
-				PbSetString(hMessage, "msg_name", buffer);
-				PbAddString(hMessage, "params", "");
-				PbAddString(hMessage, "params", "");
-				PbAddString(hMessage, "params", "");
-				PbAddString(hMessage, "params", "");
-			}
-			else
-			{
-				BfWriteByte(hMessage, client);
-				BfWriteByte(hMessage, false);
-				BfWriteString(hMessage, buffer);
-			}
-			
-			EndMessage();
-		}
 	}
 }
