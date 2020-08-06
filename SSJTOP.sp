@@ -1310,7 +1310,7 @@ void SSJTOP_PrintToChat(int client = 0, const char[] msg, any ...)
 		if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf) 
 		{
 			PbSetInt(hMessage, "ent_idx", client);
-			PbSetBool(hMessage, "chat", bAll ? false : true);
+			PbSetBool(hMessage, "chat", bAll ? true : false);
 			PbSetString(hMessage, "msg_name", buffer);
 			PbAddString(hMessage, "params", "");
 			PbAddString(hMessage, "params", "");
@@ -1320,7 +1320,7 @@ void SSJTOP_PrintToChat(int client = 0, const char[] msg, any ...)
 		else
 		{
 			BfWriteByte(hMessage, client);
-			BfWriteByte(hMessage, bAll ? false : true);
+			BfWriteByte(hMessage, bAll ? true : false);
 			BfWriteString(hMessage, buffer);
 		}
 		
