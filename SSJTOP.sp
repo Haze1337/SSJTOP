@@ -9,7 +9,7 @@ public Plugin myinfo =
 	name = "SSJ TOP",
 	author = "Haze",
 	description = "",
-	version = "1.0",
+	version = "1.1",
 	url = "https://steamcommunity.com/id/0x134/"
 }
 
@@ -1294,7 +1294,16 @@ void SSJTOP_PrintToChat(int client = 0, const char[] msg, any ...)
 	
 	char buffer[300];
 	VFormat(buffer, sizeof(buffer), msg, 3);
-	Format(buffer, sizeof(buffer), " %s[SSJ TOP]%s %s", gS_Variable, gS_Text, buffer);
+	
+	if(gEV_Type == Engine_CSS)
+	{
+		Format(buffer, sizeof(buffer), "%s[SSJ TOP]%s %s", gS_Variable, gS_Text, buffer);
+	}
+	else
+	{
+		Format(buffer, sizeof(buffer), " %s[SSJ TOP]%s %s", gS_Variable, gS_Text, buffer);
+	}
+	
 	Handle hMessage = bAll ? StartMessageAll("SayText2") : StartMessageOne("SayText2", client, USERMSG_RELIABLE|USERMSG_BLOCKHOOKS); 
 	if (hMessage != INVALID_HANDLE) 
 	{
