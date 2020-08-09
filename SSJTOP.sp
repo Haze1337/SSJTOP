@@ -9,7 +9,7 @@ public Plugin myinfo =
 	name = "SSJ TOP",
 	author = "Haze",
 	description = "",
-	version = "1.1",
+	version = "1.2",
 	url = "https://steamcommunity.com/id/0x134/"
 }
 
@@ -1293,14 +1293,7 @@ void SSJTOP_PrintToChat(int client = 0, const char[] msg, any ...)
 	char buffer[300];
 	VFormat(buffer, sizeof(buffer), msg, 3);
 	
-	if(gEV_Type == Engine_CSS)
-	{
-		Format(buffer, sizeof(buffer), "%s[SSJ TOP]%s %s", gS_Variable, gS_Text, buffer);
-	}
-	else
-	{
-		Format(buffer, sizeof(buffer), " %s[SSJ TOP]%s %s", gS_Variable, gS_Text, buffer);
-	}
+	Format(buffer, sizeof(buffer), "%s%s[SSJ TOP]%s %s", gEV_Type == Engine_CSS ? "" : " ", gS_Variable, gS_Text, buffer);
 	
 	Handle hMessage = bAll ? StartMessageAll("SayText2") : StartMessageOne("SayText2", client, USERMSG_RELIABLE|USERMSG_BLOCKHOOKS); 
 	if (hMessage != INVALID_HANDLE) 
@@ -1308,7 +1301,7 @@ void SSJTOP_PrintToChat(int client = 0, const char[] msg, any ...)
 		if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf) 
 		{
 			PbSetInt(hMessage, "ent_idx", client);
-			PbSetBool(hMessage, "chat", bAll ? true : false);
+			PbSetBool(hMessage, "chat", bAll);
 			PbSetString(hMessage, "msg_name", buffer);
 			PbAddString(hMessage, "params", "");
 			PbAddString(hMessage, "params", "");
@@ -1318,7 +1311,7 @@ void SSJTOP_PrintToChat(int client = 0, const char[] msg, any ...)
 		else
 		{
 			BfWriteByte(hMessage, client);
-			BfWriteByte(hMessage, bAll ? true : false);
+			BfWriteByte(hMessage, bAll);
 			BfWriteString(hMessage, buffer);
 		}
 		
