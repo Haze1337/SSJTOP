@@ -684,12 +684,10 @@ void CheckLastJump(int client)
 		return;
 	}
 	
-	// Checking Pre and Max SSJ
-	// Note:
-	// I want to delete this code because it is only for 100 tickrate
-	if((gA_PlayerStats[client][0].iSpeed > 290) || (gA_PlayerStats[client][5].iSpeed > 652))
+	// Checking Prespeed
+	if(gA_PlayerStats[client][0].iSpeed > 290)
 	{
-		DebugMessage(client, "Invalid Speed");
+		DebugMessage(client, "Invalid PreSpeed: %d", gA_PlayerStats[client][0].iSpeed);
 		gB_IllegalSSJ[client] = true;
 		return;
 	}
