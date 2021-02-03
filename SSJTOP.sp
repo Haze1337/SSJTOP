@@ -6,7 +6,7 @@ public Plugin myinfo =
 	name = "SSJ TOP",
 	author = "Haze",
 	description = "",
-	version = "1.2",
+	version = "1.3",
 	url = "https://steamcommunity.com/id/0x134/"
 }
 
@@ -107,6 +107,8 @@ public void OnPluginStart()
 
 	RegConsoleCmd("sm_ssjtop", Command_SSJTOP, "");
 	RegAdminCmd("sm_ssjtopdelete", Command_SSJTOPDelete, ADMFLAG_ROOT, "");
+
+	AutoExecConfig();
 	
 	SQL_DBConnect();
 	DB_LoadTop();
@@ -341,6 +343,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		{
 			IsPlayerOnSlope(client);
 			SSJ_GetStats(client, vel, angles);
+			CheckValidSSJ(client);
 			gI_TicksOnGround[client] = 0;
 		}
 	}
