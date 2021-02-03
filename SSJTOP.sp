@@ -107,8 +107,6 @@ public void OnPluginStart()
 
 	RegConsoleCmd("sm_ssjtop", Command_SSJTOP, "");
 	RegAdminCmd("sm_ssjtopdelete", Command_SSJTOPDelete, ADMFLAG_ROOT, "");
-
-	AutoExecConfig();
 	
 	SQL_DBConnect();
 	DB_LoadTop();
